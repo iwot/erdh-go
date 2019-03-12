@@ -14,6 +14,7 @@ ex_info: C:\path\to\ex_table_info.yaml
 
 
 DB接続情報（MySQLを対象にしてパスワードを省略した場合、入力プロンプトが表示される）  
+現在対応しているのはMySQLとSQLite。  
 例：db_con_mysql.yaml
 ```db_con_mysql.yaml
 dbtype: mysql
