@@ -10,19 +10,27 @@ import (
 )
 
 // ReadMySQL は対象DBを読み、Constructionを返す
-func ReadMySQL(dbconf config.DBConfig) erdh.Construction {
+func ReadMySQL(dbconf config.DBConfig) (erdh.Construction, error) {
+	var cons erdh.Construction
+
+	if len(dbconf.Password) == 0 {
+		passwd, err := readConsolePassword()
+		if err != nil {
+			return cons, err
+		}
+		dbconf.Password = passwd
+	}
 	dsn, err := dbconf.ToDSN()
 	if err != nil {
-		panic(err.Error())
+		return cons, err
 	}
 
 	db, err := sql.Open(dbconf.DBType, dsn)
 	if err != nil {
-		panic(err.Error())
+		return cons, err
 	}
 	defer db.Close()
 
-	var cons erdh.Construction
 	readMySQLDBName(db, &cons)
 
 	readMySQLTables(db, &cons)
@@ -33,7 +41,7 @@ func ReadMySQL(dbconf config.DBConfig) erdh.Construction {
 		readMySQLTableForeginKeys(db, &cons, tbl.Name)
 	}
 
-	return cons
+	return cons, nil
 }
 
 func readMySQLDBName(db *sql.DB, cons *erdh.Construction) {
@@ -117,7 +125,16 @@ func readMySQLTableColumns(db *sql.DB, cons *erdh.Construction, tableName string
 		if strings.ToUpper(columnkey) == "PRI" {
 			isPrimary = true
 		}
-		table.Columns = append(table.Columns, erdh.Column{columnName, columnType, columnkey, extra, columnDefaultValue, isNullableBool, isPrimary})
+		table.Columns = append(
+			table.Columns,
+			erdh.Column{
+				Name:       columnName,
+				ColumnType: columnType,
+				Key:        columnkey,
+				Extra:      extra,
+				Default:    columnDefaultValue,
+				NotNull:    isNullableBool,
+				IsPrimary:  isPrimary})
 	}
 }
 
@@ -150,7 +167,7 @@ func readMySQLTableIndexes(db *sql.DB, cons *erdh.Construction, tableName string
 		if err != nil {
 			panic(err)
 		}
-		table.Indexes = append(table.Indexes, erdh.Index{indexName, columnName})
+		table.Indexes = append(table.Indexes, erdh.Index{Name: indexName, ColumnName: columnName})
 	}
 }
 
@@ -189,6 +206,13 @@ func readMySQLTableForeginKeys(db *sql.DB, cons *erdh.Construction, tableName st
 		if err != nil {
 			panic(err)
 		}
-		table.ForeginKeys = append(table.ForeginKeys, erdh.ForeginKey{constraintName, columnName, referencedTableName, referencedColumnName})
+		table.ForeginKeys = append(
+			table.ForeginKeys,
+			erdh.ForeginKey{
+				ConstraintName:       constraintName,
+				ColumnName:           columnName,
+				ReferencedTableName:  referencedTableName,
+				ReferencedColumnName: referencedColumnName,
+			})
 	}
 }

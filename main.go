@@ -41,6 +41,8 @@ func main() {
 		panic(err)
 	}
 
+	cons.UpdateExRelationsFromForeignKeys()
+
 	cons.ApplyExInfo(*exInfo)
 
 	// 中間形式ファイルを保存
@@ -58,9 +60,6 @@ func main() {
 		file, _ := os.Create(*o)
 		erdh.WritePuml(file, &cons, conf)
 	} else {
-		// var b strings.Builder
-		// erdh.WritePuml(&b, &cons, conf)
-		// fmt.Println(b.String())
 		erdh.WritePuml(os.Stdout, &cons, conf)
 	}
 }

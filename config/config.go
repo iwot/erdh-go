@@ -15,14 +15,14 @@ import (
 
 type Config struct {
 	Source     string       `yaml:"source"`
-	SourceFrom string       `yaml:"source-from"`
+	SourceFrom string       `yaml:"source_from"`
 	Group      []string     `yaml:"group"`
 	Im         Intermediate `yaml:"intermediate"`
-	ExInfo     string       `yaml:"ex-info"`
+	ExInfo     string       `yaml:"ex_info"`
 }
 
 type Intermediate struct {
-	SaveTo string `yaml:"save-to"`
+	SaveTo string `yaml:"save_to"`
 }
 
 func NewConfigFromYamlFile(path string) (*Config, error) {

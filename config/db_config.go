@@ -10,11 +10,11 @@ import (
 
 type DBConfig struct {
 	DBType   string `yaml:"dbtype"`
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
+	Host     string `yaml:"host,omitempty"`
+	Port     string `yaml:"port,omitempty"`
 	DBName   string `yaml:"dbname"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
+	User     string `yaml:"user,omitempty"`
+	Password string `yaml:"password,omitempty"`
 }
 
 func (c DBConfig) ToDSN() (string, error) {
