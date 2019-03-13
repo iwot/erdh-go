@@ -1,5 +1,9 @@
 # erdh-go
 
+DBからテーブル構造を読み、PlantUML形式のファイルを出力する。  
+追加情報ファイルを別途定義して、Foregin Keyを定義していないテーブル間の関連を含めることも可能。
+
+## 設定ファイルなど
 source はmysql,sqlite,yamlを指定可能。  
 yaml を指定したとき、source_from には別プロセスで出力した中間形式ファイル（intermediate.save_to）を指定。  
 例：config_mysql.yaml
