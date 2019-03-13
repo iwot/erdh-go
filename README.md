@@ -1,5 +1,7 @@
 # erdh-go
 
+source はmysql,sqlite,yamlを指定可能。  
+yaml を指定したとき、source_from には別プロセスで出力した中間形式ファイル（intermediate.save_to）を指定。  
 例：config_mysql.yaml
 ```config_mysql.yaml
 source: mysql
@@ -57,6 +59,61 @@ tables:
   group: DATA
 ```
 
+this_conn に指定できる文字列とカーディナリティの対応。
+```go
+	switch this {
+	case "one":
+		return "--"
+	case "only-one":
+		fallthrough
+	case "onlyone":
+		return "||"
+	case "zero-or-one":
+		fallthrough
+	case "zeroorone":
+		return "|o"
+	case "many":
+		return "}-"
+	case "onemore":
+		fallthrough
+	case "one-more":
+		return "}|"
+	case "zeromany":
+		fallthrough
+	case "zero-many":
+		return "}o"
+	default:
+		return "--"
+	}
+```
+
+that_conn に指定できる文字列とカーディナリティの対応。
+```go
+	switch that {
+	case "one":
+		return "--"
+	case "only-one":
+		fallthrough
+	case "onlyone":
+		return "||"
+	case "zero-or-one":
+		fallthrough
+	case "zeroorone":
+		return "o|"
+	case "many":
+		return "-{"
+	case "onemore":
+		fallthrough
+	case "one-more":
+		return "|{"
+	case "zeromany":
+		fallthrough
+	case "zero-many":
+		return "o{"
+	default:
+		return "--"
+	}
+```
 
 以下のようにして実行するとPlantUML形式のファイルを出力する。
 ```
