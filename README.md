@@ -119,6 +119,8 @@ that_conn に指定できる文字列とカーディナリティの対応。
 	}
 ```
 
+## 実行
+
 以下のようにして実行するとPlantUML形式のファイルを出力する。
 ```
 erdh-go.exe -config config_mysql.yaml -out result.puml
