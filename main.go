@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -26,17 +27,27 @@ func main() {
 	}
 
 	fmt.Println("conf.SourceFrom", conf.SourceFrom)
-	dbConf, err := config.NewDBConfigFromYamlFile(conf.SourceFrom)
-	if err != nil {
-		panic(err)
+	var cons *erdh.Construction
+	if conf.IsDBSource() {
+		dbConf, err := config.NewDBConfigFromYamlFile(conf.SourceFrom)
+		if err != nil {
+			panic(err)
+		}
+
+		cons, err = db.ReadDB(conf.Source, *dbConf)
+		if err != nil {
+			panic(err)
+		}
+	} else if conf.IsYAMLSource() {
+		cons, err = db.ReadYAML(conf.SourceFrom)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		panic(errors.New("source error"))
 	}
 
 	exInfo, err := config.NewExtraConfigFromYamlFile(conf.ExInfo)
-	if err != nil {
-		panic(err)
-	}
-
-	cons, err := db.ReadDB(conf.Source, *dbConf)
 	if err != nil {
 		panic(err)
 	}
@@ -58,8 +69,8 @@ func main() {
 
 	if len(*o) > 0 {
 		file, _ := os.Create(*o)
-		erdh.WritePuml(file, &cons, conf)
+		erdh.WritePuml(file, cons, conf)
 	} else {
-		erdh.WritePuml(os.Stdout, &cons, conf)
+		erdh.WritePuml(os.Stdout, cons, conf)
 	}
 }

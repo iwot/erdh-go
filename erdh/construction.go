@@ -1,6 +1,11 @@
 package erdh
 
-import "github.com/iwot/erdh-go/config"
+import (
+	"io/ioutil"
+
+	"github.com/iwot/erdh-go/config"
+	"gopkg.in/yaml.v2"
+)
 
 // Construction 中間形式
 type Construction struct {
@@ -164,4 +169,24 @@ type ExRelation struct {
 type ExRelationColumn struct {
 	From string `yaml:"from"`
 	To   string `yaml:"to"`
+}
+
+func NewConstructionFromYamlFile(path string) (*Construction, error) {
+	buf, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewConstructionFromYaml(buf)
+}
+
+func NewConstructionFromYaml(buf []byte) (*Construction, error) {
+	var result = new(Construction)
+
+	err := yaml.Unmarshal(buf, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

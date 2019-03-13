@@ -146,8 +146,7 @@ func GetThisCardinality(this string) string {
 	case "zero-many":
 		return "}o"
 	default:
-		fmt.Println(this)
-		return "??"
+		return "--"
 	}
 }
 
@@ -174,6 +173,6 @@ func GetThatCardinality(that string) string {
 	case "zero-many":
 		return "o{"
 	default:
-		return "??"
+		return "--"
 	}
 }

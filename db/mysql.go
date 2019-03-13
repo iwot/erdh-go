@@ -10,24 +10,24 @@ import (
 )
 
 // ReadMySQL は対象DBを読み、Constructionを返す
-func ReadMySQL(dbconf config.DBConfig) (erdh.Construction, error) {
+func ReadMySQL(dbconf config.DBConfig) (*erdh.Construction, error) {
 	var cons erdh.Construction
 
 	if len(dbconf.Password) == 0 {
 		passwd, err := readConsolePassword()
 		if err != nil {
-			return cons, err
+			return &cons, err
 		}
 		dbconf.Password = passwd
 	}
 	dsn, err := dbconf.ToDSN()
 	if err != nil {
-		return cons, err
+		return &cons, err
 	}
 
 	db, err := sql.Open(dbconf.DBType, dsn)
 	if err != nil {
-		return cons, err
+		return &cons, err
 	}
 	defer db.Close()
 
@@ -41,7 +41,7 @@ func ReadMySQL(dbconf config.DBConfig) (erdh.Construction, error) {
 		readMySQLTableForeginKeys(db, &cons, tbl.Name)
 	}
 
-	return cons, nil
+	return &cons, nil
 }
 
 func readMySQLDBName(db *sql.DB, cons *erdh.Construction) {

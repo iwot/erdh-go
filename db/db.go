@@ -12,7 +12,7 @@ import (
 )
 
 // ReadDB は対象DBを読み、Constructionを返す
-func ReadDB(target string, dbconf config.DBConfig) (erdh.Construction, error) {
+func ReadDB(target string, dbconf config.DBConfig) (*erdh.Construction, error) {
 	switch target {
 	case "mysql":
 		cons, err := ReadMySQL(dbconf)
@@ -21,8 +21,13 @@ func ReadDB(target string, dbconf config.DBConfig) (erdh.Construction, error) {
 		cons, err := ReadSQLite(dbconf)
 		return cons, err
 	default:
-		return erdh.Construction{}, errors.New("invalid target")
+		return &erdh.Construction{}, errors.New("invalid target")
 	}
+}
+
+// ReadYAML は中間形式ファイルを読み、Constructionを返す
+func ReadYAML(path string) (*erdh.Construction, error) {
+	return erdh.NewConstructionFromYamlFile(path)
 }
 
 func readConsolePassword() (string, error) {

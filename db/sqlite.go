@@ -13,12 +13,12 @@ import (
 )
 
 // ReadSQLite は対象DBを読み、Constructionを返す
-func ReadSQLite(dbconf config.DBConfig) (erdh.Construction, error) {
+func ReadSQLite(dbconf config.DBConfig) (*erdh.Construction, error) {
 	var cons erdh.Construction
 
 	db, err := sql.Open("sqlite3", dbconf.DBName)
 	if err != nil {
-		return cons, err
+		return &cons, err
 	}
 	defer db.Close()
 
@@ -26,21 +26,21 @@ func ReadSQLite(dbconf config.DBConfig) (erdh.Construction, error) {
 
 	creates, err := retrieveCreateQueries(db)
 	if err != nil {
-		return cons, err
+		return &cons, err
 	}
 
 	var tables []erdh.Table
 	for tablName, query := range creates {
 		table, err := parseCreateQuery(query, cons.DBName, tablName)
 		if err != nil {
-			return cons, err
+			return &cons, err
 		}
 		tables = append(tables, table)
 	}
 
 	cons.Tables = tables
 
-	return cons, nil
+	return &cons, nil
 }
 
 func retrieveCreateQueries(db *sql.DB) (map[string]string, error) {
