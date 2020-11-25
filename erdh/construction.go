@@ -64,6 +64,9 @@ func (c *Construction) UpdateExRelationsFromForeignKeys() {
 	for ti, t := range c.Tables {
 		var exRelationsMap = map[string]ExRelation{}
 		for _, f := range t.ForeginKeys {
+			if len(f.ReferencedTableName) == 0 {
+				continue
+			}
 			if val, ok := exRelationsMap[f.ReferencedTableName]; ok {
 				val.Columns = append(val.Columns, ExRelationColumn{From: f.ColumnName, To: f.ReferencedColumnName})
 			} else {
