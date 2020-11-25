@@ -24,6 +24,19 @@ type Table struct {
 	IsMaster    bool         `yaml:"is-master"`
 }
 
+// AddTable は引数のTableがすでに登録されていなければ追加する
+func (c *Construction) AddTable(tbl Table) {
+	found := false
+	for _, t := range c.Tables {
+		if t.Name == tbl.Name {
+			found = true
+		}
+	}
+	if !found {
+		c.Tables = append(c.Tables, tbl)
+	}
+}
+
 // GetTableMut は指定したテーブル名のTableへのポインタを返す
 func (c *Construction) GetTableMut(tblName string) *Table {
 	for idx, tbl := range c.Tables {
@@ -107,22 +120,27 @@ func (c *Construction) ApplyExInfo(exInfo config.ExtraConfig) {
 	}
 }
 
+// AddColumn はColumnを追加する
 func (t *Table) AddColumn(name, columnType, key, extra, def string, notnull, isPrimary bool) {
 	t.Columns = append(t.Columns, Column{name, columnType, key, extra, def, notnull, isPrimary})
 }
 
+// AddIndex はIndexを追加する
 func (t *Table) AddIndex(indexName, columnName string) {
 	t.Indexes = append(t.Indexes, Index{indexName, columnName})
 }
 
+// AddForeginKey はForeginKeyを追加する
 func (t *Table) AddForeginKey(constraintName, columnName, referencedTableName, ReferencedColumnName string) {
 	t.ForeginKeys = append(t.ForeginKeys, ForeginKey{constraintName, columnName, referencedTableName, ReferencedColumnName})
 }
 
+// AddExRelations はExRelationを追加する
 func (t *Table) AddExRelations(referencedTableName string, columns []ExRelationColumn, thisConn, thatConn string) {
 	t.ExRelations = append(t.ExRelations, ExRelation{referencedTableName, columns, thisConn, thatConn})
 }
 
+// GetExRelationOfReferencedTableMut はtableNameへのExRelationを追加し、そのポインタを返す
 func (t *Table) GetExRelationOfReferencedTableMut(tableName string) *ExRelation {
 	for i, e := range t.ExRelations {
 		if e.ReferencedTableName == tableName {
@@ -140,6 +158,7 @@ func (t *Table) GetExRelationOfReferencedTableMut(tableName string) *ExRelation 
 	return &t.ExRelations[len(t.ExRelations)-1]
 }
 
+// Column はテーブルのカラム表現
 type Column struct {
 	Name       string `yaml:"name"`
 	ColumnType string `yaml:"type"`
@@ -150,11 +169,13 @@ type Column struct {
 	IsPrimary  bool   `yaml:"is_primary"`
 }
 
+// Index はテーブルのインデックス表現
 type Index struct {
 	Name       string `yaml:"name"`
 	ColumnName string `yaml:"column_name"`
 }
 
+// ForeginKey はテーブルの外部参照表現
 type ForeginKey struct {
 	ConstraintName       string `yaml:"constraint_name"`
 	ColumnName           string `yaml:"column_name"`
@@ -162,6 +183,7 @@ type ForeginKey struct {
 	ReferencedColumnName string `yaml:"referenced_column_name"`
 }
 
+// ExRelation はユーザーによるテーブル構造（ForeginKey）にはない、参照表現
 type ExRelation struct {
 	ReferencedTableName string             `yaml:"referenced_table_name"`
 	Columns             []ExRelationColumn `yaml:"columns"`
@@ -169,11 +191,13 @@ type ExRelation struct {
 	ThatConn            string             `yaml:"that_conn"`
 }
 
+// ExRelationColumn はExRelationで用いるカラム表現
 type ExRelationColumn struct {
 	From string `yaml:"from"`
 	To   string `yaml:"to"`
 }
 
+// NewConstructionFromYamlFile は与えられたYAMLファイルパスからConstructionを生成して返す
 func NewConstructionFromYamlFile(path string) (*Construction, error) {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -183,6 +207,7 @@ func NewConstructionFromYamlFile(path string) (*Construction, error) {
 	return NewConstructionFromYaml(buf)
 }
 
+// NewConstructionFromYaml は与えられたYAML文字列からConstructionを生成して返す
 func NewConstructionFromYaml(buf []byte) (*Construction, error) {
 	var result = new(Construction)
 

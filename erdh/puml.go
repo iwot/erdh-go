@@ -7,8 +7,14 @@ import (
 	"github.com/iwot/erdh-go/config"
 )
 
-func WritePuml(w io.Writer, cons *Construction, conf *config.Config) error {
-	fmt.Fprintln(w, "@startuml")
+// WritePuml はPlantUML形式のファイルの@startumlから@endumlをio.Writerに書き込む
+func WritePuml(w io.Writer, cons *Construction, conf *config.Config, centerGroup string) error {
+
+	if len(centerGroup) > 0 {
+		fmt.Fprintln(w, "@startuml " + centerGroup)
+	} else {
+		fmt.Fprintln(w, "@startuml")
+	}
 
 	// グループ一覧
 	groupes := []string{}
@@ -53,7 +59,12 @@ func WritePuml(w io.Writer, cons *Construction, conf *config.Config) error {
 
 		// package start
 		if len(groupTables) > 0 {
-			fmt.Fprintf(w, "package \"%s\" as %s {\n", group, group)
+			if group == centerGroup {
+				// 中心となるグループに色を付ける
+				fmt.Fprintf(w, "package \"%s\" as %s #DDDDDD {\n", group, group)
+			} else {
+				fmt.Fprintf(w, "package \"%s\" as %s {\n", group, group)
+			}
 		}
 
 		for _, table := range groupTables {
@@ -123,6 +134,146 @@ func WritePuml(w io.Writer, cons *Construction, conf *config.Config) error {
 	return nil
 }
 
+func contains(s []string, test string) bool {
+	for _, v := range s {
+		if test == v {
+			return true
+		}
+	}
+	return false
+}
+
+func getGroupNameByTableName(tbl string, cons *Construction) string {
+	for _, c := range cons.Tables {
+		if tbl == c.Name {
+			return c.Group
+		}
+	}
+	return ""
+}
+
+func removeOtherGroupRelation(tbl *Table, cons *Construction, relationGroups []string) {
+	newFKeys := []ForeginKey{}
+	newEXRels := []ExRelation{}
+
+	for _, f := range tbl.ForeginKeys {
+		if contains(relationGroups, getGroupNameByTableName(f.ReferencedTableName, cons)) {
+			newFKeys = append(newFKeys, f)
+		}
+	}
+	for _, e := range tbl.ExRelations {
+		if contains(relationGroups, getGroupNameByTableName(e.ReferencedTableName, cons)) {
+			newEXRels = append(newEXRels, e)
+		}
+	}
+	tbl.ForeginKeys = newFKeys
+	tbl.ExRelations = newEXRels
+}
+
+// WritePumlByGroup はWritePumlをグループごとに適用する
+func WritePumlByGroup(w io.Writer, cons *Construction, conf *config.Config) error {
+	// グループ一覧
+	groups := []string{}
+	// centerGroupTables := []string{}
+	for _, t := range cons.Tables {
+		if !contains(groups, t.Group) {
+			groups = append(groups, t.Group)
+			// centerGroupTables = append(centerGroupTables, t.Name)
+		}
+	}
+
+	// グループごとにページ書き出し
+	for _, centerGroup := range groups {
+		thisCons := &Construction{cons.DBName, []Table{}}
+		relationGroups := []string{}
+		relationGroups = append(relationGroups, centerGroup)
+		for _, t := range cons.Tables {
+			if centerGroup == t.Group {
+				thisCons.AddTable(t)
+
+				//  このテーブルから参照しているテーブルを取得
+				for _, t2 := range t.ForeginKeys {
+					for _, t3 := range cons.Tables {
+						if t2.ReferencedTableName == t3.Name {
+							thisCons.AddTable(t3)
+							relationGroups = append(relationGroups, t3.Group)
+							// t3が属するグループも集める
+							for _, t4 := range cons.Tables {
+								if t3.Group == t4.Group {
+									thisCons.AddTable(t4)
+								}
+							}
+						}
+					}
+				}
+				for _, t2 := range t.ExRelations {
+					for _, t3 := range cons.Tables {
+						if t2.ReferencedTableName == t3.Name {
+							thisCons.AddTable(t3)
+							relationGroups = append(relationGroups, t3.Group)
+							// t3が属するグループも集める
+							for _, t4 := range cons.Tables {
+								if t3.Group == t4.Group {
+									thisCons.AddTable(t4)
+								}
+							}
+						}
+					}
+				}
+
+				// このテーブルを参照しているテーブルを取得
+				for _, t2 := range cons.Tables {
+					if centerGroup == t2.Group {
+						continue
+					}
+					found := false
+					if !found {
+						for _, ex := range t2.ForeginKeys {
+							if ex.ReferencedTableName == t.Name {
+								found = true
+								break
+							}
+						}
+					}
+					if !found {
+						for _, ex := range t2.ExRelations {
+							if ex.ReferencedTableName == t.Name {
+								found = true
+								break
+							}
+						}
+					}
+
+					if found {
+						thisCons.AddTable(t2)
+						// t2が属するグループも集める
+						for _, t3 := range cons.Tables {
+							if t2.Group == t3.Group {
+								thisCons.AddTable(t3)
+								relationGroups = append(relationGroups, t3.Group)
+							}
+						}
+					}
+				}
+			}
+		}
+
+		for i := range thisCons.Tables {
+			removeOtherGroupRelation(&thisCons.Tables[i], cons, relationGroups)
+		}
+		
+
+
+		err := WritePuml(w, thisCons, conf, centerGroup)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// GetThisCardinality は左側のカーディナリティを返す
 func GetThisCardinality(this string) string {
 	switch this {
 	case "one":
@@ -150,6 +301,7 @@ func GetThisCardinality(this string) string {
 	}
 }
 
+// GetThatCardinality は右側のカーディナリティを返す
 func GetThatCardinality(that string) string {
 	switch that {
 	case "one":

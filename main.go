@@ -69,8 +69,8 @@ func main() {
 
 	if len(*o) > 0 {
 		file, _ := os.Create(*o)
-		erdh.WritePuml(file, cons, conf)
+		erdh.WritePumlByGroup(file, cons, conf)
 	} else {
-		erdh.WritePuml(os.Stdout, cons, conf)
+		erdh.WritePuml(os.Stdout, cons, conf, "")
 	}
 }
