@@ -71,7 +71,7 @@ func readMySQLTables(db *sql.DB, cons *erdh.Construction) {
 		if err != nil {
 			panic(err.Error())
 		}
-		cons.Tables = append(cons.Tables, erdh.Table{Name: tblName})
+		cons.Tables = append(cons.Tables, erdh.Table{Name: tblName, Group:cons.DBName})
 	}
 }
 
@@ -202,9 +202,17 @@ func readMySQLTableForeginKeys(db *sql.DB, cons *erdh.Construction, tableName st
 			referencedTableName  string
 			referencedColumnName string
 		)
-		err = rows.Scan(&constraintName, &columnName, &referencedTableName, &referencedColumnName)
+		referencedTableNameTemp := new(sql.NullString)
+		referencedColumnNameTemp := new(sql.NullString)
+		err = rows.Scan(&constraintName, &columnName, &referencedTableNameTemp, &referencedColumnNameTemp)
 		if err != nil {
 			panic(err)
+		}
+		if referencedTableNameTemp != nil && referencedTableNameTemp.Valid {
+			referencedTableName = referencedTableNameTemp.String
+		}
+		if referencedColumnNameTemp != nil && referencedColumnNameTemp.Valid {
+			referencedColumnName = referencedColumnNameTemp.String
 		}
 		table.ForeginKeys = append(
 			table.ForeginKeys,
