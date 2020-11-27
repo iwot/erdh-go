@@ -3,6 +3,7 @@ package erdh
 import (
 	"fmt"
 	"io"
+	"sort"
 
 	"github.com/iwot/erdh-go/config"
 )
@@ -10,6 +11,7 @@ import (
 // WritePuml はPlantUML形式のファイルの@startumlから@endumlをio.Writerに書き込む
 func WritePuml(w io.Writer, cons *Construction, conf *config.Config, centerGroup string) error {
 
+	// ファイル名を対象グループ名とする。
 	if len(centerGroup) > 0 {
 		fmt.Fprintln(w, "@startuml " + centerGroup)
 	} else {
@@ -17,7 +19,7 @@ func WritePuml(w io.Writer, cons *Construction, conf *config.Config, centerGroup
 	}
 
 	// グループ一覧
-	groupes := []string{}
+	groups := []string{}
 	encountered := map[string]bool{}
 	table2group := map[string]string{}
 	for _, tbl := range cons.Tables {
@@ -25,7 +27,7 @@ func WritePuml(w io.Writer, cons *Construction, conf *config.Config, centerGroup
 		table2group[tbl.Name] = tbl.Group
 	}
 	for key := range encountered {
-		groupes = append(groupes, key)
+		groups = append(groups, key)
 	}
 
 	isTargetGroup := func(group string) bool {
@@ -50,7 +52,7 @@ func WritePuml(w io.Writer, cons *Construction, conf *config.Config, centerGroup
 		return result
 	}
 
-	for _, group := range groupes {
+	for _, group := range groups {
 		if !isTargetGroup(group) {
 			continue
 		}
@@ -181,6 +183,25 @@ func WritePumlByGroup(w io.Writer, cons *Construction, conf *config.Config) erro
 			// centerGroupTables = append(centerGroupTables, t.Name)
 		}
 	}
+	sort.SliceStable(groups, func(i, j int) bool { return groups[i] < groups[j] })
+
+	// テーブルから参照しているテーブルを集めるための関数
+	addReferenceTableToCons := func (refInfo ReferencedTableInfo, cons *Construction, tables *[]Table) []string {
+		relationGroups := []string{}
+		for _, tbl1 := range *tables {
+			if refInfo.GetReferencedTableName() == tbl1.Name {
+				cons.AddTable(tbl1)
+				relationGroups = append(relationGroups, tbl1.Group)
+				// tbl1が属するグループも集める
+				for _, tbl2 := range *tables {
+					if tbl1.Group == tbl2.Group {
+						cons.AddTable(tbl2)
+					}
+				}
+			}
+		}
+		return relationGroups
+	}
 
 	// グループごとにページ書き出し
 	for _, centerGroup := range groups {
@@ -193,31 +214,15 @@ func WritePumlByGroup(w io.Writer, cons *Construction, conf *config.Config) erro
 
 				//  このテーブルから参照しているテーブルを取得
 				for _, t2 := range t.ForeginKeys {
-					for _, t3 := range cons.Tables {
-						if t2.ReferencedTableName == t3.Name {
-							thisCons.AddTable(t3)
-							relationGroups = append(relationGroups, t3.Group)
-							// t3が属するグループも集める
-							for _, t4 := range cons.Tables {
-								if t3.Group == t4.Group {
-									thisCons.AddTable(t4)
-								}
-							}
-						}
+					t := addReferenceTableToCons(t2, thisCons, &cons.Tables)
+					if len(t) > 0 {
+						relationGroups = append(relationGroups, t...)
 					}
 				}
 				for _, t2 := range t.ExRelations {
-					for _, t3 := range cons.Tables {
-						if t2.ReferencedTableName == t3.Name {
-							thisCons.AddTable(t3)
-							relationGroups = append(relationGroups, t3.Group)
-							// t3が属するグループも集める
-							for _, t4 := range cons.Tables {
-								if t3.Group == t4.Group {
-									thisCons.AddTable(t4)
-								}
-							}
-						}
+					t := addReferenceTableToCons(t2, thisCons, &cons.Tables)
+					if len(t) > 0 {
+						relationGroups = append(relationGroups, t...)
 					}
 				}
 
@@ -261,9 +266,10 @@ func WritePumlByGroup(w io.Writer, cons *Construction, conf *config.Config) erro
 		for i := range thisCons.Tables {
 			removeOtherGroupRelation(&thisCons.Tables[i], cons, relationGroups)
 		}
+
+		// Tablesをソート
+		sort.SliceStable(thisCons.Tables, func(i, j int) bool { return thisCons.Tables[i].Name < thisCons.Tables[j].Name })
 		
-
-
 		err := WritePuml(w, thisCons, conf, centerGroup)
 		if err != nil {
 			return err

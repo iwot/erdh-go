@@ -191,6 +191,21 @@ type ExRelation struct {
 	ThatConn            string             `yaml:"that_conn"`
 }
 
+// ReferencedTableInfo はReferencedTableNameを取得するためのインターフェイス
+type ReferencedTableInfo interface {
+	GetReferencedTableName() string
+}
+
+// GetReferencedTableName はReferencedTableNameを返す
+func (f ForeginKey) GetReferencedTableName() string {
+	return f.ReferencedTableName
+}
+
+// GetReferencedTableName はReferencedTableNameを返す
+func (e ExRelation) GetReferencedTableName() string {
+	return e.ReferencedTableName
+}
+
 // ExRelationColumn はExRelationで用いるカラム表現
 type ExRelationColumn struct {
 	From string `yaml:"from"`
